@@ -53,13 +53,17 @@ python interactive_console.py   # chat loop; ask questions, get SQL + results
 ### Working with multiple datasets
 
 Drop any number of CSVs into `data/` — each one becomes its own MySQL table
-and `python main.py load` loads them all. Target a specific table with
-`--table`:
+and `python main.py load` loads them all. You can also load straight from
+the terminal by pointing at any file or folder (no need to copy into
+`data/` first). Target a specific table with `--table`:
 
 ```powershell
-python main.py reports --list-tables                  # see loaded tables
-python main.py reports --table attendance --name top-per-group
-python main.py visualize --table attendance
+python main.py load --file "C:\path\sales.csv"         # upload one file from anywhere
+python main.py load --data-dir "C:\path\datasets"      # upload every CSV from a folder
+python main.py inspect --file "C:\path\sales.csv"      # preview the schema first
+python main.py reports --list-tables                   # see loaded tables
+python main.py reports --table sales --name top-per-group
+python main.py visualize --table sales
 ```
 
 ## Advanced SQL Reports

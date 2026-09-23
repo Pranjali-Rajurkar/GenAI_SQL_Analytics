@@ -110,3 +110,25 @@ def load_all(data_dir: Path | None = None) -> None:
     for schema in schemas:
         row_count = load_csv(schema)
         print(f"Loaded {row_count} rows into {schema.table_name}")
+
+
+def inspect_file(csv_path: Path) -> list[TableSchema]:
+    """Inspect a single CSV file at an arbitrary path."""
+
+    path = Path(csv_path)
+    if not path.is_file():
+        raise FileNotFoundError(f"File not found: {path}")
+    if path.suffix.lower() != ".csv":
+        raise ValueError(f"Not a CSV file: {path}")
+    return [infer_table_schema(path)]
+
+
+def load_file(csv_path: Path) -> None:
+    """Inspect, create, and load a single CSV file at an arbitrary path."""
+
+    schemas = inspect_file(csv_path)
+    print_schema_plan(schemas)
+    create_tables(schemas)
+    for schema in schemas:
+        row_count = load_csv(schema)
+        print(f"Loaded {row_count} rows into {schema.table_name}")
