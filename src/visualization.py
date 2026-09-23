@@ -27,24 +27,14 @@ import pandas as pd
 
 import seaborn as sns
 
-from src.analytics import list_tables
 from src.query_executor import run_select_query
-from src.sql_reports import discover_roles, overall_score
+from src.sql_reports import discover_roles, overall_score, resolve_table
 
 CHARTS_DIR = Path(__file__).resolve().parent.parent / "charts"
 PASS_SCORE = 70
 
 sns.set_theme(style="whitegrid")
 plt.rcParams["figure.dpi"] = 150
-
-
-def get_default_table() -> str:
-    """Return the first available table."""
-
-    tables = list_tables()
-    if not tables:
-        raise RuntimeError("No tables found. Run: python main.py load")
-    return tables[0]
 
 
 def scores_select(score_columns: list[str]) -> str:
@@ -251,10 +241,10 @@ CHART_BUILDERS = [
 ]
 
 
-def run_visualizations() -> None:
-    """Generate all charts and print the summary."""
+def run_visualizations(table_name: str | None = None) -> None:
+    """Generate all charts for a table (first loaded table by default)."""
 
-    table = get_default_table()
+    table = resolve_table(table_name)
     roles = discover_roles(table)
     if not roles.scores:
         print(f"No subject score columns found in table '{table}'.")

@@ -410,19 +410,37 @@ def print_report(key: str, roles: ReportRoles) -> None:
     print(tabulate(df, headers="keys", tablefmt="psql", showindex=False))
 
 
-def get_default_table() -> str:
-    """Return the first available table."""
+def list_available_tables() -> None:
+    """Print the names of tables currently loaded in MySQL."""
+
+    tables = list_tables()
+    if not tables:
+        print("No tables found. Run: python main.py load")
+        return
+    print("Available tables:")
+    for table in tables:
+        print(f"  - {table}")
+
+
+def resolve_table(table_name: str | None) -> str:
+    """Return the requested table, or the first loaded table by default."""
 
     tables = list_tables()
     if not tables:
         raise RuntimeError("No tables found. Run: python main.py load")
-    return tables[0]
+    if table_name is None:
+        return tables[0]
+    if table_name in tables:
+        return table_name
+    print(f"Table '{table_name}' not found in the database.")
+    list_available_tables()
+    raise SystemExit(1)
 
 
-def run_sql_reports(report_name: str | None = None) -> None:
-    """Run all reports, or a single named report."""
+def run_sql_reports(report_name: str | None = None, table_name: str | None = None) -> None:
+    """Run all reports against one table, or a single named report."""
 
-    table = get_default_table()
+    table = resolve_table(table_name)
     roles = discover_roles(table)
     if not roles.scores:
         print(f"No subject score columns found in table '{table}'.")

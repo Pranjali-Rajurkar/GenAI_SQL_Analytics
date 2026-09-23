@@ -7,7 +7,7 @@ import argparse
 from src.analytics import run_basic_analytics
 from src.data_loader import inspect_datasets, load_all, print_schema_plan
 from src.db_connection import create_database
-from src.sql_reports import list_report_names, run_sql_reports
+from src.sql_reports import list_available_tables, list_report_names, run_sql_reports
 from src.text_to_sql import run_text_to_sql_demo
 from src.visualization import run_visualizations
 
@@ -24,7 +24,11 @@ def build_parser() -> argparse.ArgumentParser:
     reports_parser = subparsers.add_parser("reports", help="Run advanced business-style SQL reports")
     reports_parser.add_argument("--name", help="Run a single report by name (see --list)")
     reports_parser.add_argument("--list", action="store_true", help="List available report names")
-    subparsers.add_parser("visualize", help="Generate business charts into the charts/ folder")
+    reports_parser.add_argument("--table", help="Analyze a specific loaded table (see --list-tables)")
+    reports_parser.add_argument("--list-tables", action="store_true", help="List loaded tables")
+    visualize_parser = subparsers.add_parser("visualize", help="Generate business charts into the charts/ folder")
+    visualize_parser.add_argument("--table", help="Visualize a specific loaded table (see --list-tables)")
+    visualize_parser.add_argument("--list-tables", action="store_true", help="List loaded tables")
     subparsers.add_parser("text-to-sql", help="Run the safe text-to-SQL demo")
     return parser
 
@@ -45,12 +49,17 @@ def main() -> None:
     elif args.command == "analytics":
         run_basic_analytics()
     elif args.command == "reports":
-        if args.list:
+        if args.list_tables:
+            list_available_tables()
+        elif args.list:
             list_report_names()
         else:
-            run_sql_reports(report_name=args.name)
+            run_sql_reports(report_name=args.name, table_name=args.table)
     elif args.command == "visualize":
-        run_visualizations()
+        if args.list_tables:
+            list_available_tables()
+        else:
+            run_visualizations(table_name=args.table)
     elif args.command == "text-to-sql":
         run_text_to_sql_demo()
 

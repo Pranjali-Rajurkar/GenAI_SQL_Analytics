@@ -50,6 +50,18 @@ python main.py visualize        # 6 charts → charts/ folder
 python interactive_console.py   # chat loop; ask questions, get SQL + results
 ```
 
+### Working with multiple datasets
+
+Drop any number of CSVs into `data/` — each one becomes its own MySQL table
+and `python main.py load` loads them all. Target a specific table with
+`--table`:
+
+```powershell
+python main.py reports --list-tables                  # see loaded tables
+python main.py reports --table attendance --name top-per-group
+python main.py visualize --table attendance
+```
+
 ## Advanced SQL Reports
 
 All queries are generated from the live MySQL schema and pass a read-only
