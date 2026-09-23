@@ -44,7 +44,7 @@ def create_table_sql(schema: TableSchema) -> str:
         lines.append("`load_id` BIGINT AUTO_INCREMENT PRIMARY KEY")
 
     for column in schema.columns:
-        nullable = "NULL" if column.nullable or column.clean_name == schema.primary_key else "NOT NULL"
+        nullable = "NULL" if column.nullable and column.clean_name != schema.primary_key else "NOT NULL"
         definition = f"`{column.clean_name}` {column.mysql_type} {nullable}"
         if column.clean_name == schema.primary_key:
             definition += " PRIMARY KEY"
@@ -82,6 +82,19 @@ def load_csv(schema: TableSchema) -> int:
 
     df = pd.read_csv(schema.csv_path, keep_default_na=True, encoding=schema.encoding)
     df.columns = make_unique([clean_identifier(str(column)) for column in df.columns])
+
+    # Normalize date/datetime columns to real datetime values. Passed-in
+    # files often use DD-MM-YYYY (day-first), so try that before the
+    # US-style MM-DD-YYYY default to avoid incorrect dates.
+    for column in schema.columns:
+        if column.mysql_type in ("DATE", "DATETIME") and column.clean_name in df:
+            parsed = pd.to_datetime(df[column.clean_name], errors="coerce", format="mixed", dayfirst=True)
+            if parsed.isna().mean() > 0.5:
+                parsed = pd.to_datetime(df[column.clean_name], errors="coerce", format="mixed")
+            if column.mysql_type == "DATE":
+                parsed = parsed.dt.date
+            df[column.clean_name] = parsed
+
     columns = [column.clean_name for column in schema.columns]
     placeholders = ", ".join(["%s"] * len(columns))
     column_sql = ", ".join(f"`{column}`" for column in columns)
