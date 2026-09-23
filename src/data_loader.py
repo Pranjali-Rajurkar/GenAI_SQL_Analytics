@@ -28,6 +28,7 @@ def print_schema_plan(schemas: list[TableSchema]) -> None:
     for schema in schemas:
         print(f"\nTable: {schema.table_name}")
         print(f"Source: {schema.csv_path}")
+        print(f"Source encoding: {schema.encoding}")
         print(f"Primary key: {schema.primary_key or 'auto-generated load_id'}")
         for column in schema.columns:
             nullable = "NULL" if column.nullable else "NOT NULL"
@@ -79,7 +80,7 @@ def convert_value(value: Any) -> Any:
 def load_csv(schema: TableSchema) -> int:
     """Load one CSV file into its inferred MySQL table."""
 
-    df = pd.read_csv(schema.csv_path, keep_default_na=True)
+    df = pd.read_csv(schema.csv_path, keep_default_na=True, encoding=schema.encoding)
     df.columns = make_unique([clean_identifier(str(column)) for column in df.columns])
     columns = [column.clean_name for column in schema.columns]
     placeholders = ", ".join(["%s"] * len(columns))

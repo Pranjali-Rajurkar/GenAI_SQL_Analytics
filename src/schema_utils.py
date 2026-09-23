@@ -28,6 +28,7 @@ class TableSchema:
     table_name: str
     columns: list[ColumnSchema]
     primary_key: str | None
+    encoding: str = "utf-8"
 
 
 def clean_identifier(value: str) -> str:
@@ -60,10 +61,29 @@ def csv_files(data_dir: Path) -> list[Path]:
     return sorted(path for path in data_dir.glob("*.csv") if path.is_file())
 
 
-def read_csv_sample(path: Path, sample_size: int = 5000) -> pd.DataFrame:
+def detect_encoding(path: Path, sample_bytes: int = 65536) -> str:
+    """Return the encoding a CSV file is most likely saved in.
+
+    Tries UTF-8 (with or without BOM) first, then common Windows
+    encodings, and finally Latin-1, which can decode any byte, so
+    this function always returns something usable.
+    """
+
+    with open(path, "rb") as handle:
+        blob = handle.read(sample_bytes)
+    for encoding in ("utf-8-sig", "utf-8", "cp1252", "latin-1"):
+        try:
+            blob.decode(encoding)
+            return encoding
+        except UnicodeDecodeError:
+            continue
+    return "latin-1"
+
+
+def read_csv_sample(path: Path, sample_size: int = 5000, encoding: str = "utf-8") -> pd.DataFrame:
     """Read a CSV sample as strings before type inference."""
 
-    return pd.read_csv(path, nrows=sample_size, dtype=str, keep_default_na=True)
+    return pd.read_csv(path, nrows=sample_size, dtype=str, keep_default_na=True, encoding=encoding)
 
 
 def infer_mysql_type(series: pd.Series) -> str:
@@ -118,7 +138,8 @@ def should_index(clean_name: str, mysql_type: str) -> bool:
 def infer_table_schema(csv_path: Path) -> TableSchema:
     """Infer a MySQL table schema from a CSV file."""
 
-    df = read_csv_sample(csv_path)
+    encoding = detect_encoding(csv_path)
+    df = read_csv_sample(csv_path, encoding=encoding)
     clean_columns = make_unique([clean_identifier(str(column)) for column in df.columns])
     primary_key = choose_primary_key(df, clean_columns)
     columns: list[ColumnSchema] = []
@@ -140,4 +161,5 @@ def infer_table_schema(csv_path: Path) -> TableSchema:
         table_name=clean_identifier(csv_path.stem),
         columns=columns,
         primary_key=primary_key,
+        encoding=encoding,
     )
